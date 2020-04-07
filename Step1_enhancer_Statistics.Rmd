@@ -1,0 +1,213 @@
+---
+title: "Enhancer - CpG statistics"
+author: "Andrea Nieto-Aliseda Sutton"
+date: "4/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(GenomicInteractions)
+library(JavierreLabR)
+library(org.Hs.eg.db)
+library(clusterProfiler)
+library(BSgenome.Hsapiens.UCSC.hg19)
+```
+
+## STEP 1.1 
+### Data  
+
+We have a regulatory build from ensembl (homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff). From this, we have to retreive all the enhancer regions. To do this we can use bash command line:
+
+```{bash eval=FALSE, include=FALSE}
+
+cd /media/andrea/SAMSUNG/IJC/Regulatory_Builds/general/
+
+grep enhancer homo_sapiens.GRCh37.Regulatory_Build.regulatory_features.20180925.gff > rmarkdown/enhancers_regulatory_build.gff
+
+cd rmarkdown 
+
+awk '{ print $1 "\t" $4 "\t" $5 }' enhancers_regulatory_build.gff > coordinates.txt
+
+awk '{print $9}' enhancers_regulatory_build.gff | grep -oP '(?<=:).*?(?=;)' > ids.txt
+
+paste ids.txt coordinates.txt > enhancer_regions.txt
+
+```
+
+The *enhancer_regions.txt* file will look like this:
+```{r, echo=FALSE}
+
+enhancers <- read.table("/media/andrea/SAMSUNG/IJC/Regulatory_Builds/general/rmarkdown/enhancer_regions.txt", stringsAsFactors = F)
+colnames(enhancers) <- c("ID","chr","start","end")
+enhancers <- arrange(enhancers, chr, start)
+head(enhancers)
+
+```
+In this table we have <span style="color: red;">140,648 enhancer regions</span>
+  
+------------------ 
+  
+## STEP 1.2  
+### Exploratory Analysis of Regulatory Build (specifically of enhancer regions)  
+
+The following list of statistics are of our interest to put our integration analysis in perspective:  
+
+* Number of Enhancers  (140,648)
+* Total number of base pairs composed by enhancers
+* Percentage of genome covered by enhancers
+* Number of CpGs (of genome) located at these enhancers
+* Number of CpGs in enhancers overlapping a captured HindIII fragments (These CpGs will be analysed on the Captured-Captured interactions!)
+* Number of CpGs located at enhancers covered by 450K array
+* Number of DMPs located at enhancers
+* Number of target genes potentially altered by these DMPs -- this is obtained from integration 
+
+> Total number of base pairs composed by enhancers
+
+```{r echo=FALSE}
+
+enhancers$width <- enhancers$end - enhancers$start
+s <- sum(enhancers$width)
+r1 <- s
+```
+<span style="color: red;">```r paste0("result: ", s,"bp")```</span>  
+  
+  
+  
+> Percentage of genome covered by enhancers
+  
+The reference for the number of base pairs composing the genome as of version GRCh37.p13 is https://grch37.ensembl.org/Homo_sapiens/Info/Annotation  
+The length of the genome is 3,326,743,047  
+
+```{r, echo=FALSE}
+
+genome_len <- 3326743047 
+p <- round(s/genome_len*100, digits = 2)
+r2 <- p
+
+```
+<span style="color: red;">```r paste0("result: ", p,"%")```</span>  
+  
+  
+  
+> Number of CpGs (of genome) located at these enhancers  
+  
+To calculate this the CpG positions in the genome must be obtained and overlapped with the enhancer regions we have from ENSEMBL's regulatory build.
+```{r echo=FALSE}
+
+# chrs <- names(BSgenome.Hsapiens.UCSC.hg19)[1:24]
+# cg <- lapply(chrs, function(x) start(matchPattern("CG", BSgenome.Hsapiens.UCSC.hg19[[x]])))
+# names(cg) <- chrs
+# 
+# write.table(t, "/media/andrea/SAMSUNG/IJC/Aim2/methylation/CpG_positions_in_genome.txt", col.names = T, row.names = F, quote = F, sep = "\t")
+
+# t <- data.frame()
+# for(i in 1:length(names(cg))){
+#   x <- cbind(rep(i,length(cg[[i]])), cg[[i]])
+#   t <- rbind(t,x)
+# }
+# t <- dplyr::as_tibble(t)
+# colnames(t) <- c("chr","pos")
+# t$chr <- as.character(t$chr)
+# t$chr[t$chr == "23"] <- "X"
+# t$chr[t$chr == "24"] <- "Y"
+
+t <- as_tibble(read.table("/media/andrea/SAMSUNG/IJC/Aim2/methylation/CpG_positions_in_genome.txt", header = T))
+r3 <- dim(t)[1]
+
+```
+
+<span style="color: red;">`28217009 CpG sites identified in the genome`</span>
+
+This number of corroborated by the following link: https://emea.illumina.com/content/dam/illumina-marketing/documents/products/datasheets/truseq-methyl-capture-epic-sequencing-panel-data-sheet-470-2016-004.pdf"
+
+
+```{r echo=FALSE}
+e <- makeGRangesFromDataFrame(enhancers, keep.extra.columns = T)
+sites <- makeGRangesFromDataFrame(t, seqnames.field = "chr", start.field = "pos", end.field = "pos")
+
+overlap <- mergeByOverlaps(e,sites) #932247
+
+r4 <- nrow(overlap)
+
+```
+
+<span style="color: red;">```r paste(nrow(overlap), "genome CpGs fall at enhancer regions")```</span>  
+<span style="color: red;">```r paste0("This is ", round(nrow(overlap)/dim(t)[1]*100,2), "% of the CpGs in the genome")```</span>  
+  
+  
+> Number of CpGs in enhancers overlapping a captured HindIII fragments (These CpGs will be analysed on the Captured-Captured interactions!)
+  
+```{r echo=FALSE}
+
+e_cpgs <- overlap$sites
+fragments <- dplyr::as_tibble(read.table("/media/andrea/SAMSUNG/IJC/superquery/digest_and_probes_homo_sapiens_hg19_updated_16_02_2020.txt", stringsAsFactors = F))
+
+captured_fragments <- fragments[is.na(fragments$V5)|fragments$V5 != ".",]
+cap_frag <- makeGRangesFromDataFrame(captured_fragments, seqnames.field = "V1", start.field = "V2", end.field = "V3", keep.extra.columns = T)
+
+overlap2 <- mergeByOverlaps(cap_frag,e_cpgs) #56672
+
+r7 <- nrow(overlap2)
+```
+<span style="color: red;">```r paste(nrow(overlap2), "CpGs related to enhancers fall in captured fragments")```</span>  
+<span style="color: red;">```r paste0("This is ", round(nrow(overlap2)/nrow(overlap)*100,2), "% of the CpGs falling at enhancer regions")```</span>  
+<span style="color: red;">```r paste0("This is ", round(nrow(overlap2)/dim(t)[1]*100,2), "% of the CpGs in the genome")```</span>  
+  
+  
+> Number of CpGs located at enhancers covered by 450K array 
+  
+For this, we need the coordinates of all the CpGs in the 450K array, which I have already saved in a file. This information has originally been obtained from the manifesto (annotation R package)
+```{r, echo=FALSE}
+cpgs <- as_tibble(read.table("/media/andrea/SAMSUNG/IJC/Aim2/methylation/characterised_450Kcpgs.txt", stringsAsFactors = F, header = T))
+cpgs <- cpgs[,1:3]
+head(cpgs)
+r5 <- dim(cpgs)[1]
+```
+The CpG positions can then be overlapped with the enhancer coordinates, obtaining the number of CpGs at enhancers regions in the process
+```{r, echo=FALSE}
+
+x <- cbind(cpgs,cpgs$pos)
+d <- makeGRangesFromDataFrame(x, seqnames.field = "chr", start.field = "pos", end.field = "cpgs$pos", keep.extra.columns = T)
+
+overlap3 <- mergeByOverlaps(d,e)
+r6 <- nrow(overlap3)
+
+```
+<span style="color: red;"> ```r paste(r6, "CpGs from 450K array fall in enhancer regions")```</span>  
+
+  
+> Number of DMPs located at enhancers   
+
+This number will be obtained in the next step (step1.3)
+  
+  
+  
+  
+### SUMMARY TABLE
+
+Characteristic                   | Value
+---------------------------------|---------------------------
+Length of genome (bp)            | `3326743047`
+mean width of enhancers (bp)     | ```r round(summary(enhancers$width)[4],0)```
+N^o^ bp covered by enhancers     | ```r r1```
+% of genome covered by enhancers | ```r r2```
+---------------------------------|---------------------------
+N^o^ of CpG sites in genome      | ```r r3```
+N^o^ of CpG sites at enhancers   | ```r r4```
+% of CpG sites at enhancers      | ```r paste0(round(r4/r3*100,2),"%")```
+---------------------------------|---------------------------
+N^o^ of CpGs covered by 450K array    | ```r r5```
+N^o^ of enhancer CpGs covered by 450K | ```r r6```
+% genome CpGs covered by 450K array   | ```r paste0(round(r5/3326743047*100,2),"%")```
+% 450K CpGs falling in enhancers      | ```r paste0(round(r6/r5*100,2),"%")```
+% enhancer CpGs covered by 450K       | ```r paste0(round(r6/r4*100,2),"%")```
+---------------------------------|---------------------------
+N^o^ of enhancer CpGs at captured HindIII fragments      | ```r r7```
+% of covered enhancer CpGs at captured HindIII fragments | ```r paste0(round(r7/r5*100,2),"%")```
+---------------------------------|---------------------------
+N^o^ of DMPs                        | `225785`
+N^o^ of DMPs at enhancer regions    | `5837`
+% DMPs of covered enhancer CpGs     | ```r paste0(round(5837/r5*100,2),"%")```
+% DMPs of genome enhancer CpGs      | ```r paste0(round(5837/r4*100,2),"%")```
