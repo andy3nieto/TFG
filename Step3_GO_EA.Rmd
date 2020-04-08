@@ -7,41 +7,114 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# library(clusterProfiler)
-# library(org.Hs.eg.db)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(DOSE)
 
 ```
 
 
-#### Summary  
+### __Summary__
 
 A GO Enrichment Analysis sets out to identify GO terms that are more related to a subset of genes than expected. The expectation of how frequent a GO term should appear is defined by the __universe__, being a sort of a background model.  
 
 The list of genes we are going to use as query has been obtained by the integration between B-ALL associated DMPs falling at enhancer regions as defined by the ensembl regulatory build and PCHi-C data (for now we are using Naive B).  
 The genes therefore are those which are possibly being dysregulated by long-range regulatory elements (enhancers).  
+<br>  
+<br>  
+<br>  
+<br> 
+### __Clusterprofiler__
 
-
-#### Clusterprofiler  
-
-> all *Homo sapiens* genes used as universe  
-
+To start, the subset of genes has to be read in. 
+<br>  
+```{r, echo=FALSE}
+g <- read.table("/media/andrea/SAMSUNG/IJC/Aim3/WORKFLOW-31-03/genes_all.txt", stringsAsFactors = F)
+g <- g$V1
+```
+The subset of genes we want to study consist of __```r length(g)``` genes__
+<br>  
 ```{r, echo=FALSE}
 
+capt <- read.table("/media/andrea/SAMSUNG/IJC/superquery/realfinal_superquery.txt", header = T, stringsAsFactors = F)
+baits <- unique(capt$ensembl_gene_id[!is.na(capt$ensembl_gene_id)]) 
 
 ```
+__```r length(baits)```__ genes will be used as background  
+<br>  
+```{r, echo=FALSE}
 
-> Captured genes in PCHi-C used as universe
-
-
-
-```{r universe as captured genes}
-# enrichgo <- enrichGO(xg, OrgDb = org.Hs.eg.db, keyType = "ENSEMBL")
-# results <- dplyr::as_tibble(as.data.frame(enrichgo@result))
-# results <- results[results$p.adjust < 0.05,] #259 
-# View(results)
-```
-
-
-```{r universe as all HS genes, echo=FALSE}
+bp <- enrichGO(g, OrgDb = org.Hs.eg.db, keyType = "ENSEMBL", ont = "BP", pAdjustMethod = "fdr", universe = baits)
+results <- dplyr::as_tibble(as.data.frame(bp@result))
 
 ```
+The only two GO terms which pass the FDR cutoff < __0.05__ for BP ontology are the following:
+```{r, echo=FALSE}
+results[1:2,c(1:3,5:7)]
+```
+<br>
+With a p-value cutoff of __0.1__ the following enriched terms are found:
+```{r, echo=FALSE}
+bp2 <- enrichGO(g, OrgDb = org.Hs.eg.db, keyType = "ENSEMBL", ont = "BP", pAdjustMethod = "fdr", universe = baits, pvalueCutoff = 0.1)
+results <- dplyr::as_tibble(as.data.frame(bp2@result))
+results[1:3,c(1:3,5:7)]
+```
+<br>
+With a p-value and q-value cutoff of __0.5__ the following enriched terms are found:
+```{r, echo=FALSE}
+bp3 <- enrichGO(g, OrgDb = org.Hs.eg.db, keyType = "ENSEMBL", ont = "BP", pAdjustMethod = "fdr", universe = baits, pvalueCutoff = 0.5, qvalueCutoff = 0.5)
+results <- dplyr::as_tibble(as.data.frame(bp3@result))
+results[1:13,c(1:3,5:7)]
+```
+<br>
+Lets try with a different ontology like Molecular Function (MF) (pvalue < 0.5, qvalue < 0.5)
+```{r, echo=FALSE}
+mf <- enrichGO(g, OrgDb = org.Hs.eg.db, keyType = "ENSEMBL", ont = "MF", pAdjustMethod = "fdr", universe = baits, pvalueCutoff = 0.5, qvalueCutoff = 0.5)
+results <- dplyr::as_tibble(as.data.frame(mf@result))
+results[1:10,c(1:3,5:7)]
+```
+<br>  
+<br>  
+<br>  
+<br> 
+__What about a Disease Ontology?__
+For this it is necessary to map our ENSEMBL gene IDs to ENTREZ gene IDs, which fails to map 26.92% in the process, leaving us with 1146 genes
+```{r include=FALSE}
+
+entrez <- bitr(geneID = g, OrgDb = org.Hs.eg.db, fromType = "ENSEMBL", toType = "ENTREZID") # 1,146 mapped genes
+do <- enrichDO(entrez$ENTREZID, ont = "DO", pAdjustMethod = "fdr", universe = baits, pvalueCutoff = 0.1, minGSSize = 1)
+results <- dplyr::as_tibble(as.data.frame(mf@result))
+
+```
+#### NOTHING
+<br>  
+<br>  
+<br>  
+<br> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
