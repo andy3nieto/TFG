@@ -1,14 +1,3 @@
----
-title: "Enhancer - CpG statistics"
-author: "Andrea Nieto-Aliseda Sutton"
-date: "4/6/2020"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-
 ## STEP 1.1 
 ### Data  
 
