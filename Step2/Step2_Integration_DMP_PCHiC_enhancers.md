@@ -1,15 +1,3 @@
----
-title: "Integration of DMPs and PCHiC"
-author: "Andrea Nieto-Aliseda Sutton"
-date: "06/04/2020"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-
-
 ## STEP 1.3
 ### Integration  
 
