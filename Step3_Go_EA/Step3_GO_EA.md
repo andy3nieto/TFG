@@ -1,24 +1,9 @@
----
-title: "GO Enrichment Analysis"
-author: "Andrea Nieto-Aliseda Sutton"
-date: "07/04/2020"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-
-
 ### __Summary__
 
 A GO Enrichment Analysis sets out to identify GO terms that are more related to a subset of genes than expected. The expectation of how frequent a GO term should appear is defined by the __universe__, being a sort of a background model.  
 
 The list of genes we are going to use as query has been obtained by the integration between B-ALL associated DMPs falling at enhancer regions as defined by the ensembl regulatory build and PCHi-C data (for now we are using Naive B).  
 The genes therefore are those which are possibly being dysregulated by long-range regulatory elements (enhancers).  
-<br>  
-<br>  
-<br>  
 <br>  
 
 ### __Clusterprofiler__
