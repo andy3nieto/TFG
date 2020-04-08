@@ -88,7 +88,7 @@ Number of transcripts possibly being dysregulated by DMPs at long-range enhancer
 This translates to <span style="color: red;">500 genes</span>  
   
   
-Subgroup   | Interactions    | N^o^ transcripts | N^o^ genes
+Subgroup   | Interactions    | No transcripts | No genes
 -----------|-----------------|------------------|-------------
 1          | OE_P_I, P_OE_II | 4632             | 1107
 2          | P_P_I, P_P_II   | 2015             | 500
