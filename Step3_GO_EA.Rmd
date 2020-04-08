@@ -2,7 +2,9 @@
 title: "GO Enrichment Analysis"
 author: "Andrea Nieto-Aliseda Sutton"
 date: "07/04/2020"
-output: rmarkdown::github_document
+output: 
+  html_document:
+    keep_md: true
 ---
 
 ```{r setup, include=FALSE}
