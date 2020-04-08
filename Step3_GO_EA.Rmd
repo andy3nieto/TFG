@@ -2,7 +2,7 @@
 title: "GO Enrichment Analysis"
 author: "Andrea Nieto-Aliseda Sutton"
 date: "07/04/2020"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -23,7 +23,8 @@ The genes therefore are those which are possibly being dysregulated by long-rang
 <br>  
 <br>  
 <br>  
-<br> 
+<br>  
+
 ### __Clusterprofiler__
 
 To start, the subset of genes has to be read in. 
