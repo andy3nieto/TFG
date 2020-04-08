@@ -23,10 +23,7 @@ A GO Enrichment Analysis sets out to identify GO terms that are more related to 
 The list of genes we are going to use as query has been obtained by the integration between B-ALL associated DMPs falling at enhancer regions as defined by the ensembl regulatory build and PCHi-C data (for now we are using Naive B).  
 The genes therefore are those which are possibly being dysregulated by long-range regulatory elements (enhancers).  
 <br>  
-<br>  
-<br>  
-<br>  
-
+ 
 ### __Clusterprofiler__
 
 To start, the subset of genes has to be read in. 
@@ -89,7 +86,7 @@ do <- enrichDO(entrez$ENTREZID, ont = "DO", pAdjustMethod = "fdr", universe = ba
 results <- dplyr::as_tibble(as.data.frame(mf@result))
 
 ```
-#### NOTHING
+#### NOTHING WAS FOUND
 <br>  
 <br>  
 <br>  
