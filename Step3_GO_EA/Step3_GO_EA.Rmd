@@ -130,6 +130,12 @@ trans <- unique(capt$ensembl_transcript_id[!is.na(capt$ensembl_transcript_id)])
 bpt <- enrichGO(t, OrgDb = org.Hs.eg.db, keyType = "ENSEMBLTRANS", ont = "BP", pAdjustMethod = "fdr", universe = trans)
 results10 <- dplyr::as_tibble(as.data.frame(bpt@result))
 
+mft <- enrichGO(t, OrgDb = org.Hs.eg.db, keyType = "ENSEMBLTRANS", ont = "MF", pAdjustMethod = "fdr", universe = trans)
+results10 <- dplyr::as_tibble(as.data.frame(mft@result))
+
+ct <- enrichGO(t, OrgDb = org.Hs.eg.db, keyType = "ENSEMBLTRANS", ont = "CC", pAdjustMethod = "fdr", universe = trans)
+results10 <- dplyr::as_tibble(as.data.frame(bpt@result))
+
 #write.table(results10, "/media/andrea/SAMSUNG/IJC/Aim3/WORKFLOW-31-03/GO_BP_trans_results.txt", row.names = F, col.names = T, quote = F, sep = "\t")
 ```
 
